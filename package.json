@@ -5,7 +5,9 @@
   "license": "MIT",
   "scripts": {
      "dev": "nodemon index.js",
-     "start": "node server/index.js"
+     "start": "node server/index.js",
+     "build": "echo 'No build step for backend'"
+
     },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
