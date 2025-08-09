@@ -1,4 +1,3 @@
-// server/server.js
 import express from 'express';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
@@ -23,7 +22,7 @@ app.use(cors({ origin: true, credentials: true }));
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests, please try again later.',
 });
@@ -38,20 +37,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server Error' });
 });
 
-// Server Listen Logic with Error Handling
-const PORT = process.env.PORT || 7002;
+// If running locally, start the server
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 7002;
+  app.listen(PORT, () => {
+    console.log(`✅ Server running locally on port ${PORT}`);
+  });
+}
 
-const server = app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
-
-// 👇 Prevent crash loop on port conflict
-server.on('error', (err) => {
-  console.log(err)
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Kill the process or change the port.`);
-    process.exit(1);
-  } else {
-    throw err;
-  }
-});
+export default app; // <— This is key for Vercel
