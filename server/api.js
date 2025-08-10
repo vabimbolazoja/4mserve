@@ -1,15 +1,5 @@
-// server/api/index.js
-import http from 'http';
-import app from './index.js'; // This is already your Express app
+// server/api.js
+import app from './index.js';
 
-const PORT = process.env.PORT || 5001;
-
-const server = http.createServer(app);
-
-server.listen(PORT, (err) => {
-    if (!err) {
-        console.log(`Server started at port: ${PORT}`);
-    } else {
-        console.error(err);
-    }
-});
+// Vercel serverless functions expect this
+export default app;
