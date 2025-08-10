@@ -1,21 +1,21 @@
-// config/db.js
-import mongoose from 'mongoose';
+// server/config/db.js
+import mongoose from "mongoose";
 
-let isConnected = false; // Track connection
+let isConnected = false;
 
-export default async function connectDB() {
+const connectDB = async () => {
   if (isConnected) return;
-
   try {
-    const db = await mongoose.connect(process.env.MONGO_URI, {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
-
-    isConnected = db.connections[0].readyState;
-    console.log('MongoDB connected');
-  } catch (err) {
-    console.error(err);
-    throw new Error('DB connection failed');
+    isConnected = conn.connections[0].readyState;
+    console.log("MongoDB connected:", conn.connection.host);
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw new Error("Failed to connect to MongoDB");
   }
-}
+};
+
+export default connectDB;
