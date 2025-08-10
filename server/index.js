@@ -21,10 +21,9 @@ app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 
 app.use(cors({
-  origin: "https://4mad.vercel.app", // your frontend domain
-  credentials: true
+  origin: "https://4mad.vercel.app", // frontend domain
+  credentials: true                  // allow cookies & Authorization headers
 }));
-
 
 // Rate Limiting
 const limiter = rateLimit({
