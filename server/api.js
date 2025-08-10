@@ -1,6 +1,6 @@
 // server/api/index.js
 import http from 'http';
-import app from '../index.js'; // This is already your Express app
+import app from './index.js'; // This is already your Express app
 
 const PORT = process.env.PORT || 5001;
 
