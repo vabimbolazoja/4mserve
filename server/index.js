@@ -18,18 +18,27 @@ app.use(helmet());
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(cookieParser());
-app.use(cors({ origin: true, credentials: true }));
-// 3️⃣ CORS setup (must come before routes)
-app.use(cors({
-  origin: "https://4mad.vercel.app", // your Vercel frontend
-  credentials: true
-}));
 
-// 4️⃣ Handle preflight OPTIONS requests
-app.options("*", cors({
-  origin: "https://4mad.vercel.app",
+// CORS setup for exactly two allowed origins
+const allowedOrigins = [
+  "https://4mad.vercel.app",
+  "https://4mcl.vercel.app"
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, false); // Block requests without origin
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Handle preflight requests
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -47,7 +56,5 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Server Error' });
 });
-
-
 
 export default app; // <— This is key for Vercel
