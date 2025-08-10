@@ -23,7 +23,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   "https://4mad.vercel.app",
   "https://4mcl.vercel.app",
-  "http://localhost:5178"
+  "http://localhost:5173"
 
 ];
 
