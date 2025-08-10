@@ -26,7 +26,7 @@ export const register = async (req, res) => {
     });
 
     await user.save();
-    const verifyUrl = `https://yourdomain.com/verify-mail?token=${verificationToken}`;
+    const verifyUrl = `https://4mcl.vercel.app/verify-mail?token=${verificationToken}`;
     const html = renderTemplate({
       title: 'Verify Your Email',
       message: 'Thank you for registering! Please click the button below to verify your email.',
@@ -209,7 +209,7 @@ export const initiatePasswordReset = async (req, res) => {
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    const resetUrl = `https://yourdomain.com/reset-password?token=${resetToken}`;
+    const resetUrl = `https://4mcl.vercel.app/reset-password?token=${resetToken}`;
     const html = renderTemplate({
       title: 'Reset Your Password',
       message: 'Click the button below to reset your password. If you didn’t request this, ignore the email.',
