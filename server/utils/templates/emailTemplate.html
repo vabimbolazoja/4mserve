@@ -3,83 +3,126 @@
   <head>
     <meta charset="UTF-8" />
     <title>{{title}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      body {
+      /* Reset */
+      body, p, h1, h2, h3, a {
         margin: 0;
         padding: 0;
-        background-color: #f4f4f4;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9fafb;
+        color: #333333;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .email-wrapper {
         width: 100%;
-        background-color: #f4f4f4;
-        padding: 20px;
+        background-color: #f9fafb;
+        padding: 40px 20px;
+        display: flex;
+        justify-content: center;
       }
 
       .email-container {
+        background: #ffffff;
+        border-radius: 14px;
         max-width: 600px;
-        margin: auto;
-        background-color: #ffffff;
-        border-radius: 10px;
+        width: 100%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
       }
 
+      /* Header with text logo */
       .header {
-        background-color: #28a745;
+        background-color: #22c55e; /* slightly brighter green */
+        padding: 30px 25px;
         text-align: center;
-        padding: 20px;
+        font-weight: 900;
+        font-size: 32px;
+        letter-spacing: 2px;
+        color: white;
+        user-select: none;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        text-transform: uppercase;
       }
 
-      .header img {
-        width: 100px;
-        height: auto;
-      }
-
+      /* Body content */
       .body {
-        padding: 30px 20px;
-        color: #333;
+        padding: 40px 30px;
       }
 
       .body h2 {
-        margin-top: 0;
-        font-size: 24px;
-        color: #28a745;
+        color: #16a34a; /* darker green */
+        font-size: 28px;
+        margin-bottom: 20px;
+        font-weight: 700;
       }
 
+      .body p {
+        font-size: 16px;
+        margin-bottom: 28px;
+        color: #4b5563; /* cool gray */
+      }
+
+      /* Button style */
       .button {
         display: inline-block;
-        padding: 12px 25px;
-        background-color: #28a745;
-        color: #ffffff !important;
+        background-color: #22c55e;
+        color: white !important;
         text-decoration: none;
-        border-radius: 5px;
-        margin: 20px 0;
-        font-weight: bold;
+        padding: 14px 32px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        user-select: none;
       }
 
+      .button:hover {
+        background-color: #16a34a;
+        box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5);
+      }
+
+      /* Footer */
       .footer {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        font-size: 13px;
         text-align: center;
-        padding: 20px;
-        background-color: #f0f0f0;
-        font-size: 12px;
-        color: #888;
+        padding: 25px 20px;
+        border-top: 1px solid #e5e7eb;
+        user-select: none;
       }
 
-      @media only screen and (max-width: 600px) {
+      /* Responsive */
+      @media (max-width: 620px) {
+        .email-wrapper {
+          padding: 20px 10px;
+        }
+
         .body {
-          padding: 20px 15px;
+          padding: 30px 20px;
+        }
+
+        .header {
+          font-size: 26px;
+          padding: 25px 20px;
         }
 
         .body h2 {
-          font-size: 20px;
+          font-size: 24px;
         }
 
         .button {
-          padding: 10px 20px;
           font-size: 14px;
+          padding: 12px 25px;
         }
       }
     </style>
@@ -88,26 +131,23 @@
   <body>
     <div class="email-wrapper">
       <div class="email-container">
-        <!-- Header with logo -->
         <div class="header">
-          <img src="https://yourdomain.com/logo.png" alt="YourApp Logo" />
+          4marketDays
         </div>
 
-        <!-- Email body -->
         <div class="body">
           <h2>{{title}}</h2>
           <p>{{message}}</p>
           <div style="text-align: center;">
             <a href="{{action_url}}" class="button">{{action_label}}</a>
           </div>
-          <p style="font-size: 13px; color: #777;">
+          <p style="margin-top: 24px; font-size: 13px; color: #9ca3af;">
             If you did not request this, you can safely ignore this email.
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
-          &copy; {{year}} YourApp. All rights reserved.
+          &copy; {{year}} 4marketDays. All rights reserved.
         </div>
       </div>
     </div>
