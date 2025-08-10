@@ -11,7 +11,17 @@ import cookieParser from 'cookie-parser';
 dotenv.config();
 
 const app = express();
-connectDB();
+
+// Connect to DB (per request, but cached)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB connection failed:', err);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
 
 // Security + Middleware
 app.use(helmet());
@@ -33,10 +43,8 @@ app.use('/api', authRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Unhandled error:', err.stack);
   res.status(500).json({ message: 'Server Error' });
 });
 
-
-
-export default app; // <— This is key for Vercel
+export default app; // ✅ works for Vercel
