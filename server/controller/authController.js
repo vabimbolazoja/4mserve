@@ -173,12 +173,13 @@ export const loginAdmin = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-  
+
+    
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 86400000,
+      secure: true,      // Required for HTTPS (Vercel is always HTTPS)
+      sameSite: "none",  // Required for cross-site cookies
+      path: "/",         // Cookie valid for entire site
     });
 
     // Return token

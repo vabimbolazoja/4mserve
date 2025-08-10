@@ -20,6 +20,12 @@ app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
 
+app.use(cors({
+  origin: "https://4mad.vercel.app", // your frontend domain
+  credentials: true
+}));
+
+
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
