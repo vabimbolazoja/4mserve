@@ -19,14 +19,16 @@ app.use(express.json());
 app.use(mongoSanitize());
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
-app.options("*", cors({
-  origin: "https://4mad.vercel.app",
+// 3️⃣ CORS setup (must come before routes)
+app.use(cors({
+  origin: "https://4mad.vercel.app", // your Vercel frontend
   credentials: true
 }));
 
-app.use(cors({
-  origin: "https://4mad.vercel.app", // frontend domain
-  credentials: true                  // allow cookies & Authorization headers
+// 4️⃣ Handle preflight OPTIONS requests
+app.options("*", cors({
+  origin: "https://4mad.vercel.app",
+  credentials: true
 }));
 
 // Rate Limiting
