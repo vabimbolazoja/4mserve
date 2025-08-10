@@ -21,9 +21,9 @@ app.use(cookieParser());
 
 // CORS setup for exactly two allowed origins
 const allowedOrigins = [
-  "https://4mad.vercel.app",
+  "https://dmd-three.vercel.app",
   "https://4mcl.vercel.app",
-  "http://localhost:5173"
+  "http://localhost:5176"
 
 ];
 
