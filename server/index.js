@@ -37,12 +37,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server Error' });
 });
 
-// If running locally, start the server
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 7002;
-  app.listen(PORT, () => {
-    console.log(`✅ Server running locally on port ${PORT}`);
-  });
-}
+
 
 export default app; // <— This is key for Vercel

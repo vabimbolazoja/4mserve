@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
      "dev": "nodemon index.js",
-     "start": "node server/index.js",
+     "start": "node server/api/index.js",
      "build": "echo 'No build step for backend'"
 
     },

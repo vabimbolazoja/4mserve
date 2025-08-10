@@ -60,7 +60,7 @@ router.put('/admin/orders-delivery-address/:id', protectAdmin, addressDelivery);
 
 
 router.post('/admin/product', protectAdmin, createProduct);
-router.get('/api/products', getProducts);
+router.get('/products', getProducts);
 router.get('/product/:id', getProduct);
 router.get('/productCategory', getProductsByCategory);
 router.put('/admin/product/:id', protectAdmin, updateProduct);
