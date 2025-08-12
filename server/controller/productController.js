@@ -30,6 +30,36 @@ export const createProduct = async (req, res) => {
   }
 };
 
+  export const getActiveProducts = async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  try {
+    // Filter for only ACTIVE products
+    const filter = { status: 'ACTIVE' };
+
+    const products = await Product.find(filter)
+      .select('name category priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
+      .populate('category', 'name') // 👈 populate only _id and name of category
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const count = await Product.countDocuments(filter);
+
+    res.status(200).json({
+      total: count,
+      page,
+      pages: Math.ceil(count / limit),
+      products, // 👈 category will be like: { _id, name }
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+
 // 🔹 Get All Products
 export const getProducts = async (req, res) => {
   const page = Number(req.query.page) || 1;
@@ -76,6 +106,45 @@ export const getProductsByCategory = async (req, res) => {
   try {
     const products = await Product.find(query)
       .select('name category priceNaira priceUsd nutritionalInfo storageInstructions moq description imageUrls status')
+      .populate('category', 'name')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const count = await Product.countDocuments(query);
+
+    res.status(200).json({
+      total: count,
+      page,
+      pages: Math.ceil(count / limit),
+      products,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+export const getActiveProductsByCategory = async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  const { categoryId } = req.query;
+
+  // Always filter for ACTIVE products
+  const query = { status: 'ACTIVE' };
+
+  if (categoryId) {
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ message: 'Invalid category ID' });
+    }
+    query.category = new mongoose.Types.ObjectId(categoryId);
+  }
+
+  try {
+    const products = await Product.find(query)
+      .select(
+        'name category priceNaira priceUsd nutritionalInfo storageInstructions moq description imageUrls status'
+      )
       .populate('category', 'name')
       .skip(skip)
       .limit(limit)
