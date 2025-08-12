@@ -37,7 +37,7 @@ export const createProduct = async (req, res) => {
 
   try {
     // Filter for only ACTIVE products
-    const filter = { status: 'ACTIVE' };
+    const filter = { status: 'Active' };
 
     const products = await Product.find(filter)
       .select('name category priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
@@ -131,7 +131,7 @@ export const getActiveProductsByCategory = async (req, res) => {
   const { categoryId } = req.query;
 
   // Always filter for ACTIVE products
-  const query = { status: 'ACTIVE' };
+  const query = { status: 'Active' };
 
   if (categoryId) {
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
