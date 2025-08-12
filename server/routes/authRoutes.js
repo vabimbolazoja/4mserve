@@ -9,6 +9,8 @@ import {
   updateProduct,
   deleteProduct,
   getProductsByCategory,
+  getActiveProductsByCategory,
+  getActiveProducts
 
 } from '../controller/productController.js';
 import {
@@ -57,6 +59,8 @@ router.get('/admin/orders', protectAdmin, getAllOrders);
 router.get('/admin/orders-delivery', protectAdmin, getPendingDelivery);
 router.put('/admin/orders-delivery-address/:id', protectAdmin, addressDelivery);
 
+router.get('/products-active', getActiveProducts);
+router.get('/productCategory-active', getActiveProductsByCategory);
 
 
 router.post('/admin/product', protectAdmin, createProduct);
