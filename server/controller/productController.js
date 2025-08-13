@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 // 🔹 Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls,storageInstructions,nutritionalInfo } = req.body;
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls,storageInstructions,nutritionalInfo,stock } = req.body;
 
     const foundCategory = await Category.findById(category);
     if (!foundCategory) return res.status(400).json({ message: 'Invalid category' });
@@ -19,6 +19,7 @@ export const createProduct = async (req, res) => {
       priceUsd,
       description,
       moq,
+      stock,
       imageUrls,
       storageInstructions, nutritionalInfo
 
@@ -105,7 +106,7 @@ export const getProductsByCategory = async (req, res) => {
 
   try {
     const products = await Product.find(query)
-      .select('name category priceNaira priceUsd nutritionalInfo storageInstructions moq description imageUrls status')
+      .select('name category priceNaira priceUsd stock nutritionalInfo storageInstructions moq description imageUrls status')
       .populate('category', 'name')
       .skip(skip)
       .limit(limit)
@@ -143,7 +144,7 @@ export const getActiveProductsByCategory = async (req, res) => {
   try {
     const products = await Product.find(query)
       .select(
-        'name category priceNaira priceUsd nutritionalInfo storageInstructions moq description imageUrls status'
+        'name category priceNaira priceUsd stock nutritionalInfo storageInstructions moq description imageUrls status'
       )
       .populate('category', 'name')
       .skip(skip)
@@ -179,7 +180,7 @@ export const getProduct = async (req, res) => {
 // 🔹 Update Product
 export const updateProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, storageInstructions, nutritionalInfo
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls,stock, storageInstructions, nutritionalInfo
     } = req.body;
     const prodstatus = req.body.status ? 'Active' : 'Inactive'
 
@@ -190,7 +191,7 @@ export const updateProduct = async (req, res) => {
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, category, priceNaira, priceUsd, description, moq, imageUrls, status: prodstatus,storageInstructions,nutritionalInfo },
+      { name, category, priceNaira, priceUsd, description, moq,stock, imageUrls, status: prodstatus,storageInstructions,nutritionalInfo },
       { new: true, runValidators: true }
     );
 

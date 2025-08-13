@@ -2,7 +2,7 @@
 import https from 'https';
 import Orders from '../models/orders.js';
 import Payment from '../models/payment.js';
-
+import Product from "../models/products.js"
 export const initiatePayment = async (req, res) => {
   try {
     // Extract and validate request body
@@ -88,20 +88,30 @@ export const initiatePayment = async (req, res) => {
   }
 };
 
+const updateInventory = async (order) => {
+  for (const item of order.orders) {
+    const product = await Product.findById(item.prod_id);
+    if (product) {
+      // Ensure quantity doesn't go negative
+      product.quantity = Math.max(0, (product.stock || 0) - item.qty);
+      await product.save();
+    }
+  }
+};
+
 export const verifyPayment = async (req, res) => {
   try {
     const { ref, id } = req.body;
 
-    // Validate input
     if (!ref || !id) {
-      return res.status(400).json({ message: 'Payment reference and order ID are required' });
+      return res.status(400).json({ message: "Payment reference and order ID are required" });
     }
 
     const options = {
-      hostname: 'api.paystack.co',
+      hostname: "api.paystack.co",
       port: 443,
       path: `/transaction/verify/${encodeURIComponent(ref)}`,
-      method: 'GET',
+      method: "GET",
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
       },
@@ -109,61 +119,69 @@ export const verifyPayment = async (req, res) => {
     };
 
     const paystackReq = https.request(options, (paystackRes) => {
-      let data = '';
+      let data = "";
 
-      paystackRes.on('data', (chunk) => {
+      paystackRes.on("data", (chunk) => {
         data += chunk;
       });
 
-      paystackRes.on('end', async () => {
+      paystackRes.on("end", async () => {
         try {
           const responseJson = JSON.parse(data);
 
-          // Update order based on Paystack response
           const order = await Orders.findById(id);
-          const payment = await Payment.findOne({orderId:id});
+          const payment = await Payment.findOne({ orderId: id });
+
           if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).json({ message: "Order not found" });
           }
 
-          if (responseJson?.data?.status === 'success') {
-            order.paymentStatus = 'PAID';
+          if (responseJson?.data?.status === "success") {
+            order.paymentStatus = "PAID";
             payment.paymentRef = ref;
+
+            // Update inventory here
+            await updateInventory(order);
           } else {
-            order.paymentStatus = 'FAILED';
+            order.paymentStatus = "FAILED";
             payment.paymentRef = ref;
           }
 
           await order.save();
 
           return res.status(200).json({
-            message: 'Order updated successfully',
+            message: "Order updated successfully",
             paystack: responseJson,
             orderId: order._id,
           });
         } catch (err) {
           console.error(err);
-          return res.status(500).json({ message: 'Error processing payment verification', error: err.message });
+          return res.status(500).json({
+            message: "Error processing payment verification",
+            error: err.message,
+          });
         }
       });
     });
 
-    paystackReq.on('timeout', () => {
-      console.error('Paystack request timed out');
+    paystackReq.on("timeout", () => {
+      console.error("Paystack request timed out");
       paystackReq.abort();
-      return res.status(504).json({ message: 'Payment verification request timed out' });
+      return res.status(504).json({ message: "Payment verification request timed out" });
     });
 
-    paystackReq.on('error', (error) => {
-      console.error('Paystack request error:', error.message);
-      return res.status(500).json({ message: 'Payment verification failed', error: error.message });
+    paystackReq.on("error", (error) => {
+      console.error("Paystack request error:", error.message);
+      return res.status(500).json({
+        message: "Payment verification failed",
+        error: error.message,
+      });
     });
 
     paystackReq.end();
-
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

@@ -4,11 +4,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-     "dev": "nodemon index.js",
-     "start": "node api.js",
-     "build": "echo 'No build step for backend'"
-
-    },
+    "dev": "nodemon index.js",
+    "start": "node api.js",
+    "build": "echo 'No build step for backend'"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
