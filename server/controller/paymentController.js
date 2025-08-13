@@ -93,7 +93,7 @@ const updateInventory = async (order) => {
     const product = await Product.findById(item.prod_id);
     if (product) {
       // Ensure quantity doesn't go negative
-      product.quantity = Math.max(0, (product.stock || 0) - item.qty);
+      product.stock = Math.max(0, (product.stock || 0) - item.qty);
       await product.save();
     }
   }
