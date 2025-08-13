@@ -41,7 +41,7 @@ export const createProduct = async (req, res) => {
     const filter = { status: 'Active' };
 
     const products = await Product.find(filter)
-      .select('name category priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
+      .select('name category stock priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
       .populate('category', 'name') // 👈 populate only _id and name of category
       .skip(skip)
       .limit(limit)
@@ -69,7 +69,7 @@ export const getProducts = async (req, res) => {
 
   try {
     const products = await Product.find()
-      .select('name category priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
+      .select('name category priceNaira stock priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
       .populate('category', 'name') // 👈 populate _id and name of category
       .skip(skip)
       .limit(limit)
