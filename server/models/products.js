@@ -38,7 +38,7 @@ const productSchema = new mongoose.Schema(
     },
     stock: {
       type: Number, // Minimum Order Quantity
-      stock: 1,
+      stock: 0,
     },
     imageUrls: {
       type: [String],
