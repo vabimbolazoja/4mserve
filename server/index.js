@@ -23,7 +23,9 @@ app.use(cookieParser());
 const allowedOrigins = [
   "https://dmd-three.vercel.app",
   "https://4mcl.vercel.app",
-  "http://localhost:5176"
+  "http://localhost:5176", 
+  "http://localhost:5173"
+
 
 ];
 
