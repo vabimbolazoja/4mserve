@@ -2,69 +2,75 @@ import fetch from "node-fetch";
 
 export const validateAddress = async (req, res) => {
   try {
-    // Use query param since frontend sends address in URL
-    const { address } = req.query;
+    const { address } = req.body;
     if (!address) {
       return res.status(400).json({ message: "Address is required" });
     }
 
-    // Call Nominatim API
+    // Query Nominatim API
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+        address
+      )}`,
       {
         headers: {
-          "User-Agent": "YourAppName/1.0 (support@yourapp.com)",
+          // ✅ Use a clear User-Agent (Nominatim requires this)
+          "User-Agent": "SalarioPay/1.0 (support@salariopay.com)",
           "Accept-Language": "en",
         },
       }
     );
 
-    if (response.status === 429) {
-      return res.status(429).json({ message: "Too many requests to Nominatim. Please try later." });
-    }
-
+    // Handle non-200 responses
     if (!response.ok) {
-      return res.status(500).json({ message: "Error querying Nominatim API" });
+      const text = await response.text(); // capture error body for debugging
+      console.error("Nominatim error:", response.status, text);
+
+      return res.status(response.status).json({
+        message: "Error querying Nominatim API",
+        status: response.status,
+        error: text,
+      });
     }
 
     const data = await response.json();
+
+    // If no results returned
     if (!data || data.length === 0) {
-      return res.status(404).json({ message: "Address not found or invalid" });
+      return res
+        .status(404)
+        .json({ message: "Address not found or invalid" });
     }
 
+    // Extract country from Nominatim result
     const displayName = data[0].display_name.toLowerCase();
     let country = null;
 
-    // ✅ Handle common variations
     if (displayName.includes("nigeria")) country = "Nigeria";
-    else if (
-      displayName.includes("united states") ||
-      displayName.includes("usa") ||
-      displayName.includes("united states of america")
-    ) country = "United States";
+    else if (displayName.includes("united states") || displayName.includes("usa"))
+      country = "United States";
     else if (displayName.includes("canada")) country = "Canada";
-    else if (
-      displayName.includes("netherlands") ||
-      displayName.includes("holland")
-    ) country = "Netherlands";
-    else if (
-      displayName.includes("spain") ||
-      displayName.includes("españa")
-    ) country = "Spain";
+    else if (displayName.includes("netherlands")) country = "Netherlands";
+    else if (displayName.includes("spain")) country = "Spain";
 
+    // Only allow supported countries
     if (!country) {
-      return res.status(400).json({ message: "❌ Address not supported for delivery" });
+      return res
+        .status(400)
+        .json({ message: "❌ Address not supported for delivery" });
     }
 
+    // ✅ Success response
     return res.json({
       message: "✅ Address validated successfully",
       country,
-      normalizedAddress: data[0].display_name, // full human-readable address
-      lat: data[0].lat,
-      lon: data[0].lon,
+      full: data[0], // send back raw Nominatim data too for debugging
     });
-
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Server error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
