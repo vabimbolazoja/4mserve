@@ -2,6 +2,7 @@ import express from 'express';
 import { initiatePasswordReset, resetPassword, login, verifyEmailAddress, register, registerAdmin, loginAdmin, verifyEmailAddressResend } from '../controller/authController.js';
 import { protect } from '../middlewares/auth-middleware.js';
 import { protectAdmin } from '../middlewares/admin-middleware.js';
+import {validateAddress} from "../controller/addressController.js"
 import {
   createProduct,
   getProducts,
@@ -69,6 +70,7 @@ router.get('/product/:id', getProduct);
 router.get('/productCategory', getProductsByCategory);
 router.put('/admin/product/:id', protectAdmin, updateProduct);
 router.delete('/product/:id', protectAdmin, deleteProduct);
+router.get('/validate-address', validateAddress);
 
 router.get("/auth/user", protectAdmin, async (req, res) => {
   const user = await Admin.findById(req.user.id).select("-password");

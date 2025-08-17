@@ -67,7 +67,7 @@ export const initiatePayment = async (req, res) => {
       paystackRes.on('end', () => {
         const responseJson = JSON.parse(data);
         return res.status(200).json({
-          message: 'Order Created Successfully, You will be redirdected to the payment page to complete payment',
+          message: 'Order Submitted Successfully, You will be redirdected to the payment page to complete payment',
           paystack: responseJson,
           orderId: order._id,
         });
