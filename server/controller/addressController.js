@@ -51,7 +51,6 @@ export const validateAddress = async (req, res) => {
       country = "United States";
     else if (displayName.includes("canada")) country = "Canada";
     else if (displayName.includes("netherlands")) country = "Netherlands";
-    else if (displayName.includes("spain")) country = "Spain";
 
     // Only allow supported countries
     if (!country) {
