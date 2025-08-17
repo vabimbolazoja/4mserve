@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 
 export const validateAddress = async (req, res) => {
   try {
-    const { address } = req.body;
+    const { address } = req.query;
     if (!address) {
       return res.status(400).json({ message: "Address is required" });
     }
