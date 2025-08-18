@@ -186,7 +186,7 @@ export const getAllOrders = async (req, res) => {
   
   export const guestTrack = async (req, res) => {
     try {
-      const { order_ref } = req.params;
+      const order_ref  = req.params;
   
       if (!order_ref) {
         return res.status(400).json({
@@ -196,7 +196,7 @@ export const getAllOrders = async (req, res) => {
       }
   
       // Find order(s) that match the order_ref
-      const order = await Order.findOne({ order_ref });
+      const order = await Order.findOne({ ref : order_ref });
   
       // Always return as an array (even if single result or none)
       const ordersArray = order ? [order] : [];
