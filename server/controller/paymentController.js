@@ -46,7 +46,7 @@ export const initiatePayment = async (req, res) => {
       email: user_email,
       amount: totalAmt * 100,
       currency: paymentType,
-      callback_url: `${process.env.CLIENT_URL}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}`,
+      callback_url: `${process.env.CLIENT_URL}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
     });
 
     const options = {
