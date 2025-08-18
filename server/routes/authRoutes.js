@@ -19,7 +19,7 @@ import {
   initiatePayment,
   allUserOrders
 } from '../controller/paymentController.js'
-import { getCustomers, getAllOrders ,getPendingDelivery,addressDelivery} from "../controller/adminController.js"
+import { getCustomers,guestTrack, getAllOrders ,getPendingDelivery,addressDelivery} from "../controller/adminController.js"
 import {
   createCategory,
   getCategories,
@@ -43,6 +43,7 @@ router.get('/categories', getCategories);
 router.post('/order/initiate', initiatePayment);
 router.post('/order/verify', verifyPayment);
 router.get('/orders/customer/:id', allUserOrders);
+router.get('/orders/guest/:id', guestTrack);
 
 
 

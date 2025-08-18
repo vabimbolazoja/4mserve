@@ -183,3 +183,36 @@ export const getAllOrders = async (req, res) => {
     }
   };
   
+  
+  export const guestTrack = async (req, res) => {
+    try {
+      const { order_ref } = req.params;
+  
+      if (!order_ref) {
+        return res.status(400).json({
+          success: false,
+          message: "Order reference (order_ref) is required",
+        });
+      }
+  
+      // Find order(s) that match the order_ref
+      const order = await Orders.findOne({ order_ref });
+  
+      // Always return as an array (even if single result or none)
+      const ordersArray = order ? [order] : [];
+  
+      res.status(200).json({
+        success: true,
+        totalOrders: ordersArray.length,
+        orders: ordersArray,
+      });
+    } catch (error) {
+      console.error("Error fetching order by ref:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error. Could not fetch order.",
+        error: error.message,
+      });
+    }
+  };
+  
