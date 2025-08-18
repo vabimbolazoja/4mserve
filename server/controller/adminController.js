@@ -196,7 +196,7 @@ export const getAllOrders = async (req, res) => {
       }
   
       // Find order(s) that match the order_ref
-      const order = await Orders.findOne({ order_ref });
+      const order = await Order.findOne({ order_ref });
   
       // Always return as an array (even if single result or none)
       const ordersArray = order ? [order] : [];
