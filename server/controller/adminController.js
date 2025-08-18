@@ -196,16 +196,22 @@ export const getAllOrders = async (req, res) => {
         });
       }
   
-      // ✅ match your schema field name exactly ("order_ref" or "ref")
+      // ✅ match your schema field name exactly ("ref" or "order_ref")
       const order = await Order.findOne({ ref: order_ref });
   
-      // Always return as an array
-      const ordersArray = order ? [order] : [];
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Tracking order is invalid", // 👈 custom exception message
+          orders: [],
+        });
+      }
   
+      // Always return as an array even if single
       res.status(200).json({
         success: true,
-        totalOrders: ordersArray.length,
-        orders: ordersArray,
+        totalOrders: 1,
+        orders: [order],
       });
     } catch (error) {
       console.error("Error fetching order by ref:", error);
