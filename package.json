@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon index.js",
+    "dev": "nodemon api.js",
     "start": "node api.js",
     "build": "echo 'No build step for backend'"
   },

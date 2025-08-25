@@ -2,7 +2,7 @@ import { MongoClient } from 'mongodb';
 
 const uri = 'mongodb+srv://marketdays462:BD0SOkseHIcnreDC@cluster0.waphz.mongodb.net/4market?retryWrites=true&w=majority';
 const dbName = '4market';
-const collectionName = 'users';
+const collectionName = 'orders';
 
 const client = new MongoClient(uri);
 

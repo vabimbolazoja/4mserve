@@ -3,6 +3,7 @@ import { initiatePasswordReset, resetPassword, login, verifyEmailAddress, regist
 import { protect } from '../middlewares/auth-middleware.js';
 import { protectAdmin } from '../middlewares/admin-middleware.js';
 import {validateAddress} from "../controller/addressController.js"
+import { getAllConfigs, getConfigByCountry, upsertConfig } from "../service/configService.js";
 import {
   createProduct,
   getProducts,
@@ -46,6 +47,39 @@ router.get('/orders/customer/:id', allUserOrders);
 router.get('/orders/guest/:order_ref', guestTrack);
 
 
+// Get all country configs
+router.get("/moderations/config", async (req, res) => {
+  try {
+    const configs = await getAllConfigs();
+    res.json(configs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get one country's config
+router.get("/moderations/:country", async (req, res) => {
+  try {
+    const { country } = req.params;
+    const config = await getConfigByCountry(country);
+    if (!config) return res.status(404).json({ message: "Config not found" });
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update or create config for a country
+router.put("/moderations/:country", async (req, res) => {
+  try {
+    const { country } = req.params;
+    const { deliveryPriceInKg } = req.body;
+    const config = await upsertConfig(country, deliveryPriceInKg);
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 router.post('/admin/category', protectAdmin, createCategory);
