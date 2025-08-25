@@ -73,7 +73,7 @@ router.get("/moderations/:country", async (req, res) => {
 router.put("/moderations/:country", async (req, res) => {
   try {
     const { country } = req.params;
-    const { deliveryPriceInKg } = req.body;
+    const deliveryPriceInKg  = req.body?.price;
     const config = await upsertConfig(country, deliveryPriceInKg);
     res.json(config);
   } catch (err) {
