@@ -24,6 +24,14 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  totalSub: {
+    type: Number,
+    default: 0,
+  },
+  deliveryCost: {
+    type: Number,
+    default: 0,
+  },
   paymentStatus: {
     type: String,
     default: 'PENDING',

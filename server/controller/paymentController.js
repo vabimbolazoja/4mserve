@@ -6,7 +6,7 @@ import Product from "../models/products.js"
 export const initiatePayment = async (req, res) => {
   try {
     // Extract and validate request body
-    const { deliveryInfo, orders, user_email, user_id, totalAmt, paymentType, receipt } = req.body;
+    const { deliveryInfo, orders, user_email, user_id, totalAmt, paymentType, deliveryCost,totalSub } = req.body;
 
     if (!deliveryInfo || !orders?.length || !user_email || !user_id || !totalAmt || !paymentType) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -25,6 +25,8 @@ export const initiatePayment = async (req, res) => {
       userId: user_id,
       totalAmt,
       paymentType,
+      deliveryCost,
+      totalSub,
       ref: `ORD-4MT-${randomNumbersOrders}`
     });
 
