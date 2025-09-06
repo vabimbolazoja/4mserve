@@ -191,23 +191,27 @@ export const allUserOrders = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Pagination values
-    const page = parseInt(req.query.page) || 1; // default: page 1
-    const limit = parseInt(req.query.limit) || 10; // default: 10 per page
+    // Pagination params
+    const page = Math.max(1, parseInt(req.query.page) || 1); // default page 1
+    const limit = Math.max(1, parseInt(req.query.limit) || 10); // default 10 per page
     const skip = (page - 1) * limit;
 
-    // Fetch orders
-    const orders = await Orders.find({ userId: userId })
-      .sort({ _id: -1 })
+    // Query filter
+    const filter = { userId };
+
+    // Fetch paginated + latest first orders
+    const orders = await Orders.find(filter)
+      .sort({ createdAt: -1 }) // ensure you're sorting by actual timestamp field
       .skip(skip)
       .limit(limit);
 
-    // Total orders count
-    const totalOrders = await Orders.countDocuments({ userId: userId });
+    // Count total orders
+    const totalOrders = await Orders.countDocuments(filter);
 
     res.status(200).json({
       success: true,
       page,
+      limit,
       totalPages: Math.ceil(totalOrders / limit),
       totalOrders,
       orders,
