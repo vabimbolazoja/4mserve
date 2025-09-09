@@ -29,7 +29,6 @@ export const getCustomers = async (req, res) => {
 };
 
 
-
 export const getAllOrders = async (req, res) => {
   try {
     // ✅ Pagination values
@@ -43,7 +42,7 @@ export const getAllOrders = async (req, res) => {
     // ✅ Build query object
     let query = {};
 
-    // 🔍 Search only if value is not empty
+    // 🔍 Apply search only if not empty
     if (search && search.trim() !== "") {
       query.$or = [
         { ref: search }, // exact match
@@ -62,17 +61,18 @@ export const getAllOrders = async (req, res) => {
       ];
     }
 
-    // ✅ Apply filters dynamically
+    // ✅ Apply filters dynamically (ignore empty values)
     Object.keys(filters).forEach((key) => {
-      if (filters[key] && filters[key].trim() !== "") {
-        // Case-insensitive match for filters like orderStatus, paymentStatus, etc.
-        query[key] = { $regex: `^${filters[key]}$`, $options: "i" };
+      const value = filters[key];
+      if (value && value.trim() !== "") {
+        // exact but case-insensitive
+        query[key] = { $regex: `^${value}$`, $options: "i" };
       }
     });
 
     // ✅ Fetch orders with user details
     const orders = await Order.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 }) // latest first
       .skip(skip)
       .limit(limit)
       .populate({
@@ -80,7 +80,7 @@ export const getAllOrders = async (req, res) => {
         select: "firstName lastName email phoneNumber image",
       });
 
-    // ✅ Attach product + category details
+    // ✅ Attach product + category details for each order
     const ordersWithProducts = await Promise.all(
       orders.map(async (order) => {
         const productsDetailed = await Promise.all(
@@ -121,6 +121,7 @@ export const getAllOrders = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
   export const getPendingDelivery = async (req, res) => {
     try {
