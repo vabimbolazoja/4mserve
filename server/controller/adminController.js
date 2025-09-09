@@ -31,62 +31,96 @@ export const getCustomers = async (req, res) => {
 
 
 export const getAllOrders = async (req, res) => {
-    try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-  
-      // Step 1: Find orders with pagination & sort first
-      const orders = await Order.find()
-        .sort({ createdAt: -1 }) // ✅ Latest first
-        .skip(skip)
-        .limit(limit)
-        .populate({
-          path: 'userId',
-          select: 'firstName lastName email phoneNumber image', // ✅ Only necessary user fields
-        });
-  
-      // Step 2: For each order, attach full product + category data
-      const ordersWithProducts = await Promise.all(
-        orders.map(async (order) => {
-          const productsDetailed = await Promise.all(
-            order.orders.map(async (item) => {
-              const product = await Product.findById(item.prod_id)
-                .populate({
-                  path: 'category',
-                  select: 'name description image',
-                })
-                .select('name priceNaira priceUsd moq description imageUrls category');
-  
-              return {
-                ...item.toObject(),
-                product,
-              };
-            })
-          );
-  
-          return {
-            ...order.toObject(),
-            orders: productsDetailed,
-          };
-        })
-      );
-  
-      // Step 3: Total count for pagination
-      const totalOrders = await Order.countDocuments();
-  
-      res.json({
-        success: true,
-        page,
-        totalPages: Math.ceil(totalOrders / limit),
-        totalOrders,
-        orders: ordersWithProducts,
-      });
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      res.status(500).json({ success: false, message: 'Server error' });
+  try {
+    // ✅ Pagination values
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // ✅ Extract search and filters
+    const { search, ...filters } = req.query;
+
+    // ✅ Build query object
+    let query = {};
+
+    // 🔍 Search only if value is not empty
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { ref: search }, // exact match
+        { "deliveryInfo.name": { $regex: search, $options: "i" } },
+        { "deliveryInfo.email": { $regex: search, $options: "i" } },
+        { "deliveryInfo.phone": { $regex: search, $options: "i" } },
+        { "deliveryInfo.address": { $regex: search, $options: "i" } },
+        { userEmail: { $regex: search, $options: "i" } },
+        { orderStatus: { $regex: search, $options: "i" } },
+        { paymentStatus: { $regex: search, $options: "i" } },
+        { deliveryStatus: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+        { rider: { $regex: search, $options: "i" } },
+        { paymentType: { $regex: search, $options: "i" } },
+        { "orders.prod_name": { $regex: search, $options: "i" } },
+      ];
     }
-  };
+
+    // ✅ Apply filters dynamically
+    Object.keys(filters).forEach((key) => {
+      if (filters[key] && filters[key].trim() !== "") {
+        // Case-insensitive match for filters like orderStatus, paymentStatus, etc.
+        query[key] = { $regex: `^${filters[key]}$`, $options: "i" };
+      }
+    });
+
+    // ✅ Fetch orders with user details
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "userId",
+        select: "firstName lastName email phoneNumber image",
+      });
+
+    // ✅ Attach product + category details
+    const ordersWithProducts = await Promise.all(
+      orders.map(async (order) => {
+        const productsDetailed = await Promise.all(
+          order.orders.map(async (item) => {
+            const product = await Product.findById(item.prod_id)
+              .populate({
+                path: "category",
+                select: "name description image",
+              })
+              .select("name priceNaira priceUsd moq description imageUrls category");
+
+            return {
+              ...item.toObject(),
+              product,
+            };
+          })
+        );
+
+        return {
+          ...order.toObject(),
+          orders: productsDetailed,
+        };
+      })
+    );
+
+    // ✅ Count for pagination
+    const totalOrders = await Order.countDocuments(query);
+
+    res.json({
+      success: true,
+      page,
+      totalPages: Math.ceil(totalOrders / limit),
+      totalOrders,
+      orders: ordersWithProducts,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching orders:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
   export const getPendingDelivery = async (req, res) => {
     try {
