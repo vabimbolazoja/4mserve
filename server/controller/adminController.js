@@ -61,18 +61,20 @@ export const getAllOrders = async (req, res) => {
       ];
     }
 
-    // ✅ Apply filters dynamically (ignore empty values)
-    Object.keys(filters).forEach((key) => {
-      const value = filters[key];
-      if (value && value.trim() !== "") {
-        // exact but case-insensitive
-        query[key] = { $regex: `^${value}$`, $options: "i" };
-      }
+    // ✅ Clean filters (remove empty)
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v && v.trim() !== "")
+    );
+
+    // ✅ Apply only non-empty filters
+    Object.keys(cleanFilters).forEach((key) => {
+      const value = cleanFilters[key];
+      query[key] = { $regex: `^${value}$`, $options: "i" }; // case-insensitive exact
     });
 
     // ✅ Fetch orders with user details
     const orders = await Order.find(query)
-      .sort({ createdAt: -1 }) // latest first
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate({
@@ -121,6 +123,7 @@ export const getAllOrders = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
   export const getPendingDelivery = async (req, res) => {
