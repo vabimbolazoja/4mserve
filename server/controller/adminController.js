@@ -29,53 +29,79 @@ export const getCustomers = async (req, res) => {
 };
 
 
+// Helper to escape user input before using in RegExp
+function escapeRegex(str = "") {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export const getAllOrders = async (req, res) => {
   try {
+    // pagination
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // ✅ Clean query params: remove empty strings
+    // --- Remove pagination keys and sanitize incoming params ---
+    const raw = { ...req.query };
+    delete raw.page;
+    delete raw.limit;
+
     const params = {};
-    Object.keys(req.query || {}).forEach((key) => {
-      const value = req.query[key];
-      if (value !== undefined && value !== null && String(value).trim() !== "") {
-        params[key] = String(value).trim();
-      }
+    Object.keys(raw).forEach((k) => {
+      let v = raw[k];
+      if (Array.isArray(v)) v = v[0];
+      if (v === undefined || v === null) return;
+      const s = String(v).trim();
+      const lower = s.toLowerCase();
+      // treat empty, "null", "undefined" as absent
+      if (s === "" || lower === "null" || lower === "undefined") return;
+      params[k] = s;
     });
 
     const { search, ...filters } = params;
 
-    // ✅ Build query (start empty like your original)
+    // --- Build query only if we actually have filters/search ---
     let query = {};
 
     if (search) {
+      const s = escapeRegex(search);
       query.$or = [
-        { ref: search },
-        { "deliveryInfo.name": { $regex: search, $options: "i" } },
-        { "deliveryInfo.email": { $regex: search, $options: "i" } },
-        { "deliveryInfo.phone": { $regex: search, $options: "i" } },
-        { "deliveryInfo.address": { $regex: search, $options: "i" } },
-        { userEmail: { $regex: search, $options: "i" } },
-        { orderStatus: { $regex: search, $options: "i" } },
-        { paymentStatus: { $regex: search, $options: "i" } },
-        { deliveryStatus: { $regex: search, $options: "i" } },
-        { location: { $regex: search, $options: "i" } },
-        { rider: { $regex: search, $options: "i" } },
-        { paymentType: { $regex: search, $options: "i" } },
-        { "orders.prod_name": { $regex: search, $options: "i" } },
+        { ref: s }, // if you want case-insensitive here use regex
+        { "deliveryInfo.name": { $regex: s, $options: "i" } },
+        { "deliveryInfo.email": { $regex: s, $options: "i" } },
+        { "deliveryInfo.phone": { $regex: s, $options: "i" } },
+        { "deliveryInfo.address": { $regex: s, $options: "i" } },
+        { userEmail: { $regex: s, $options: "i" } },
+        { orderStatus: { $regex: s, $options: "i" } },
+        { paymentStatus: { $regex: s, $options: "i" } },
+        { deliveryStatus: { $regex: s, $options: "i" } },
+        { location: { $regex: s, $options: "i" } },
+        { rider: { $regex: s, $options: "i" } },
+        { paymentType: { $regex: s, $options: "i" } },
+        { "orders.prod_name": { $regex: s, $options: "i" } },
       ];
     }
 
-    // ✅ Apply filters only if present
     Object.keys(filters).forEach((key) => {
-      query[key] = filters[key];
+      // For safety: use case-insensitive exact match for filter values.
+      // If you prefer strict equality, you can set: query[key] = filters[key];
+      query[key] = new RegExp(`^${escapeRegex(filters[key])}$`, "i");
     });
 
-    // Step 1: Find orders
-    const orders = await Order.find(query)
-      .sort({ createdAt: -1 })
+    // --- DEBUG logs (paste these if it still fails) ---
+    console.log("RAW req.query:", req.query);
+    console.log("CLEAN params:", params);
+    console.log("FINAL query object:", JSON.stringify(query, null, 2));
+
+    // --- Use Order.find() with no argument if query is empty (exact original behaviour) ---
+    const useEmptyFind = Object.keys(query).length === 0;
+
+    const baseFind = useEmptyFind
+      ? Order.find()        // EXACTLY like your original working code
+      : Order.find(query);
+
+    const orders = await baseFind
+      .sort({ createdAt: -1 }) // latest first
       .skip(skip)
       .limit(limit)
       .populate({
@@ -83,36 +109,35 @@ export const getAllOrders = async (req, res) => {
         select: "firstName lastName email phoneNumber image",
       });
 
-    // Step 2: Attach products
+    // --- attach product + category data (same as your original) ---
     const ordersWithProducts = await Promise.all(
       orders.map(async (order) => {
         const productsDetailed = await Promise.all(
-          order.orders.map(async (item) => {
+          (order.orders || []).map(async (item) => {
+            if (!item || !item.prod_id) return { ...item };
             const product = await Product.findById(item.prod_id)
               .populate({
                 path: "category",
                 select: "name description image",
               })
               .select("name priceNaira priceUsd moq description imageUrls category");
-
             return {
-              ...item.toObject(),
+              ...item.toObject ? item.toObject() : item,
               product,
             };
           })
         );
 
         return {
-          ...order.toObject(),
+          ...order.toObject ? order.toObject() : order,
           orders: productsDetailed,
         };
       })
     );
 
-    // Step 3: Pagination count
-    const totalOrders = await Order.countDocuments(query);
+    const totalOrders = await Order.countDocuments(useEmptyFind ? {} : query);
 
-    res.json({
+    return res.json({
       success: true,
       page,
       totalPages: Math.ceil(totalOrders / limit),
@@ -121,7 +146,7 @@ export const getAllOrders = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error fetching orders:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
