@@ -36,27 +36,64 @@ export const getAllOrders = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Step 1: Find orders with pagination & sort first
-    const orders = await Order.find()
-      .sort({ createdAt: -1 }) // ✅ Latest first
+    // ✅ Clean query params: remove empty strings
+    const params = {};
+    Object.keys(req.query || {}).forEach((key) => {
+      const value = req.query[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        params[key] = String(value).trim();
+      }
+    });
+
+    const { search, ...filters } = params;
+
+    // ✅ Build query (start empty like your original)
+    let query = {};
+
+    if (search) {
+      query.$or = [
+        { ref: search },
+        { "deliveryInfo.name": { $regex: search, $options: "i" } },
+        { "deliveryInfo.email": { $regex: search, $options: "i" } },
+        { "deliveryInfo.phone": { $regex: search, $options: "i" } },
+        { "deliveryInfo.address": { $regex: search, $options: "i" } },
+        { userEmail: { $regex: search, $options: "i" } },
+        { orderStatus: { $regex: search, $options: "i" } },
+        { paymentStatus: { $regex: search, $options: "i" } },
+        { deliveryStatus: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+        { rider: { $regex: search, $options: "i" } },
+        { paymentType: { $regex: search, $options: "i" } },
+        { "orders.prod_name": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // ✅ Apply filters only if present
+    Object.keys(filters).forEach((key) => {
+      query[key] = filters[key];
+    });
+
+    // Step 1: Find orders
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate({
-        path: 'userId',
-        select: 'firstName lastName email phoneNumber image', // ✅ Only necessary user fields
+        path: "userId",
+        select: "firstName lastName email phoneNumber image",
       });
 
-    // Step 2: For each order, attach full product + category data
+    // Step 2: Attach products
     const ordersWithProducts = await Promise.all(
       orders.map(async (order) => {
         const productsDetailed = await Promise.all(
           order.orders.map(async (item) => {
             const product = await Product.findById(item.prod_id)
               .populate({
-                path: 'category',
-                select: 'name description image',
+                path: "category",
+                select: "name description image",
               })
-              .select('name priceNaira priceUsd moq description imageUrls category');
+              .select("name priceNaira priceUsd moq description imageUrls category");
 
             return {
               ...item.toObject(),
@@ -72,8 +109,8 @@ export const getAllOrders = async (req, res) => {
       })
     );
 
-    // Step 3: Total count for pagination
-    const totalOrders = await Order.countDocuments();
+    // Step 3: Pagination count
+    const totalOrders = await Order.countDocuments(query);
 
     res.json({
       success: true,
@@ -83,10 +120,11 @@ export const getAllOrders = async (req, res) => {
       orders: ordersWithProducts,
     });
   } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("❌ Error fetching orders:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 
