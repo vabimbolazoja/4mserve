@@ -35,17 +35,19 @@ export const getAllOrders = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // ✅ Step 1: Clean query params (remove empty values)
-    const params = Object.fromEntries(
-      Object.entries(req.query).filter(([_, v]) => v && v.trim() !== "")
-    );
+    // ✅ Clean params (remove empty/null/undefined)
+    const params = {};
+    Object.keys(req.query).forEach((key) => {
+      if (req.query[key] && req.query[key].trim() !== "") {
+        params[key] = req.query[key];
+      }
+    });
 
     const { search, ...filters } = params;
 
-    // ✅ Step 2: Build Mongo query
+    // ✅ Build query
     let query = {};
 
-    // 🔍 Search
     if (search) {
       query.$or = [
         { ref: search },
@@ -64,14 +66,16 @@ export const getAllOrders = async (req, res) => {
       ];
     }
 
-    // ✅ Filters
+    // ✅ Apply filters (only non-empty ones)
     Object.keys(filters).forEach((key) => {
-      query[key] = { $regex: `^${filters[key]}$`, $options: "i" }; // exact case-insensitive
+      query[key] = filters[key];
     });
 
-    console.log("👉 Final query:", JSON.stringify(query, null, 2));
+    console.log("👉 RAW:", req.query);
+    console.log("👉 CLEANED:", params);
+    console.log("👉 FINAL QUERY:", query);
 
-    // Step 3: Fetch orders
+    // Fetch orders
     const orders = await Order.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -81,7 +85,7 @@ export const getAllOrders = async (req, res) => {
         select: "firstName lastName email phoneNumber image",
       });
 
-    // Step 4: Attach product + category data
+    // Attach product + category data
     const ordersWithProducts = await Promise.all(
       orders.map(async (order) => {
         const productsDetailed = await Promise.all(
@@ -107,7 +111,6 @@ export const getAllOrders = async (req, res) => {
       })
     );
 
-    // Step 5: Pagination count
     const totalOrders = await Order.countDocuments(query);
 
     res.json({
