@@ -60,7 +60,6 @@ export const getActiveProducts = async (req, res) => {
   }
 };
 
-
 export const getProducts = async (req, res) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
@@ -72,12 +71,18 @@ export const getProducts = async (req, res) => {
     // ✅ Base query
     let query = {};
 
-    // ✅ Status filter (if provided)
+    // ✅ Status filter
     if (status && status.trim() !== "") {
-      query.status = status;
+      if (status === "stock") {
+        // Special case: only products with stock = 0
+        query.stock = 0;
+      } else {
+        // Normal Active/Inactive filter
+        query.status = status;
+      }
     }
 
-    // ✅ Wide search (if provided)
+    // ✅ Wide search (name, description, nutritionalInfo, storageInstructions, etc.)
     if (search && search.trim() !== "") {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -87,12 +92,12 @@ export const getProducts = async (req, res) => {
       ];
     }
 
-    // ✅ Fetch products with query
+    // ✅ Fetch products
     const products = await Product.find(query)
       .select(
         "name category priceNaira stock priceUsd moq description nutritionalInfo storageInstructions imageUrls status"
       )
-      .populate("category", "name") // 👈 include only _id + name of category
+      .populate("category", "name")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -110,6 +115,7 @@ export const getProducts = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
+
 
 
 
