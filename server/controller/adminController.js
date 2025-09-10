@@ -153,70 +153,92 @@ export const getAllOrders = async (req, res) => {
 
 
 
-  export const getPendingDelivery = async (req, res) => {
-    try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-  
-      // Step 1: Find filtered orders (PAID + not DELIVERED)
-      const filter = {
-        paymentStatus: "PAID",
-        orderStatus: { $ne: "DELIVERED" }, // $ne = not equal
-      };
-  
-      const orders = await Order.find(filter)
-        .sort({ createdAt: -1 }) // Latest first
-        .skip(skip)
-        .limit(limit)
-        .populate({
-          path: "userId",
-          select: "firstName lastName email phoneNumber image",
-        });
-  
-      // Step 2: Attach full product + category data
-      const ordersWithProducts = await Promise.all(
-        orders.map(async (order) => {
-          const productsDetailed = await Promise.all(
-            order.orders.map(async (item) => {
-              const product = await Product.findById(item.prod_id)
-                .populate({
-                  path: "category",
-                  select: "name description image",
-                })
-                .select(
-                  "name priceNaira priceUsd moq description imageUrls category"
-                );
-  
-              return {
-                ...item.toObject(),
-                product,
-              };
-            })
-          );
-  
-          return {
-            ...order.toObject(),
-            orders: productsDetailed,
-          };
-        })
-      );
-  
-      // Step 3: Total count for pagination (with filter applied)
-      const totalOrders = await Order.countDocuments(filter);
-  
-      res.json({
-        success: true,
-        page,
-        totalPages: Math.ceil(totalOrders / limit),
-        totalOrders,
-        orders: ordersWithProducts,
-      });
-    } catch (error) {
-      console.error("Error fetching paid & undelivered orders:", error);
-      res.status(500).json({ success: false, message: "Server error" });
+export const getPendingDelivery = async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // ✅ Base filter: PAID + not DELIVERED
+    let query = {
+      paymentStatus: "PAID",
+      orderStatus: { $ne: "DELIVERED" },
+    };
+
+    // ✅ Wide search capability
+    const { search } = req.query;
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { ref: search }, // exact match
+        { "deliveryInfo.name": { $regex: search, $options: "i" } },
+        { "deliveryInfo.email": { $regex: search, $options: "i" } },
+        { "deliveryInfo.phone": { $regex: search, $options: "i" } },
+        { "deliveryInfo.address": { $regex: search, $options: "i" } },
+        { userEmail: { $regex: search, $options: "i" } },
+        { orderStatus: { $regex: search, $options: "i" } },
+        { paymentStatus: { $regex: search, $options: "i" } },
+        { deliveryStatus: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+        { rider: { $regex: search, $options: "i" } },
+        { paymentType: { $regex: search, $options: "i" } },
+        { "orders.prod_name": { $regex: search, $options: "i" } },
+      ];
     }
-  };
+
+    // ✅ Fetch orders with search + filter
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "userId",
+        select: "firstName lastName email phoneNumber image",
+      });
+
+    // ✅ Attach full product + category data
+    const ordersWithProducts = await Promise.all(
+      orders.map(async (order) => {
+        const productsDetailed = await Promise.all(
+          order.orders.map(async (item) => {
+            const product = await Product.findById(item.prod_id)
+              .populate({
+                path: "category",
+                select: "name description image",
+              })
+              .select(
+                "name priceNaira priceUsd moq description imageUrls category"
+              );
+
+            return {
+              ...item.toObject(),
+              product,
+            };
+          })
+        );
+
+        return {
+          ...order.toObject(),
+          orders: productsDetailed,
+        };
+      })
+    );
+
+    // ✅ Count with same query
+    const totalOrders = await Order.countDocuments(query);
+
+    res.json({
+      success: true,
+      page,
+      totalPages: Math.ceil(totalOrders / limit),
+      totalOrders,
+      orders: ordersWithProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching paid & undelivered orders:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
   
   export const addressDelivery = async (req, res) => {
     try {
