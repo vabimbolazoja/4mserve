@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 // 🔹 Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls,storageInstructions,nutritionalInfo,stock } = req.body;
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, storageInstructions, nutritionalInfo, stock } = req.body;
 
     const foundCategory = await Category.findById(category);
     if (!foundCategory) return res.status(400).json({ message: 'Invalid category' });
@@ -31,7 +31,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
-  export const getActiveProducts = async (req, res) => {
+export const getActiveProducts = async (req, res) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -61,32 +61,56 @@ export const createProduct = async (req, res) => {
 };
 
 
-// 🔹 Get All Products
 export const getProducts = async (req, res) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
   try {
-    const products = await Product.find()
-      .select('name category priceNaira stock priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
-      .populate('category', 'name') // 👈 populate _id and name of category
+    const { search, status } = req.query;
+
+    // ✅ Base query
+    let query = {};
+
+    // ✅ Status filter (if provided)
+    if (status && status.trim() !== "") {
+      query.status = status;
+    }
+
+    // ✅ Wide search (if provided)
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { nutritionalInfo: { $regex: search, $options: "i" } },
+        { storageInstructions: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // ✅ Fetch products with query
+    const products = await Product.find(query)
+      .select(
+        "name category priceNaira stock priceUsd moq description nutritionalInfo storageInstructions imageUrls status"
+      )
+      .populate("category", "name") // 👈 include only _id + name of category
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    const count = await Product.countDocuments();
+    // ✅ Count with same query
+    const count = await Product.countDocuments(query);
 
     res.status(200).json({
       total: count,
       page,
       pages: Math.ceil(count / limit),
-      products, // 👈 category will be like: { _id, name }
+      products,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Server Error', error: err.message });
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
+
 
 
 export const getProductsByCategory = async (req, res) => {
@@ -180,7 +204,7 @@ export const getProduct = async (req, res) => {
 // 🔹 Update Product
 export const updateProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls,stock, storageInstructions, nutritionalInfo
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, stock, storageInstructions, nutritionalInfo
     } = req.body;
     const prodstatus = req.body.status ? 'Active' : 'Inactive'
 
@@ -191,7 +215,7 @@ export const updateProduct = async (req, res) => {
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, category, priceNaira, priceUsd, description, moq,stock, imageUrls, status: prodstatus,storageInstructions,nutritionalInfo },
+      { name, category, priceNaira, priceUsd, description, moq, stock, imageUrls, status: prodstatus, storageInstructions, nutritionalInfo },
       { new: true, runValidators: true }
     );
 

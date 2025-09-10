@@ -11,22 +11,51 @@ export const getCustomers = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    const customers = await Users.find().skip(skip)
+    const { search, isVerified, isDisabled } = req.query;
+
+    // ✅ Base query
+    let query = {};
+
+    // ✅ Status filters
+    if (isVerified && isVerified.trim() !== "") {
+      query.isVerified = isVerified === "true";
+    }
+    if (isDisabled && isDisabled.trim() !== "") {
+      query.isDisabled = isDisabled === "true";
+    }
+
+    // ✅ Wide search
+    if (search && search.trim() !== "") {
+      query.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // ✅ Fetch customers with query
+    const customers = await Users.find(query)
+      .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    const count = await Users.countDocuments();
+    // ✅ Count with same query
+    const count = await Users.countDocuments(query);
 
     res.status(200).json({
       total: count,
       page,
       pages: Math.ceil(count / limit),
-      customers, // 👈 category will be like: { _id, name }
+      customers,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Server Error', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Server Error", error: err.message });
   }
 };
+
 
 
 // Helper to escape user input before using in RegExp
