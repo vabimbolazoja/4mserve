@@ -32,7 +32,7 @@ export const contactUs = async (req, res) => {
         Message: ${message}
       `,
       html: `
-        <h3>New Contact Form Submission</h3>
+        <h3>New Contact Form Submission - 4marketDays</h3>
         <p><strong>Full Name:</strong> ${fullName}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Subject:</strong> ${subject}</p>
