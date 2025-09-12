@@ -20,6 +20,7 @@ import {
   initiatePayment,
   allUserOrders
 } from '../controller/paymentController.js'
+import {contactUs} from "../controller/contact-us.js"
 import { getCustomers,guestTrack, getAllOrders ,getPendingDelivery,addressDelivery} from "../controller/adminController.js"
 import {
   createCategory,
@@ -98,7 +99,7 @@ router.put('/admin/orders-delivery-address/:id', protectAdmin, addressDelivery);
 router.get('/products-active', getActiveProducts);
 router.get('/productCategory-active', getActiveProductsByCategory);
 
-
+router.post("/contact", contactUs);
 router.post('/admin/product', protectAdmin, createProduct);
 router.get('/products', getProducts);
 router.get('/product/:id', getProduct);
