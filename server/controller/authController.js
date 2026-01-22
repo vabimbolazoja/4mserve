@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import Admin from '../models/admins.js';
+import Payment from '../models/user.js';
 import sendEmail from '../utils/sendMail.js';
 import renderTemplate from '../utils/renderTemplate.js';
 
@@ -46,6 +47,24 @@ export const register = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+export const deleteAllAdmins = async (req, res) => {
+  try {
+    const result = await Payment.deleteMany({});
+
+    res.status(200).json({
+      message: 'All admin records deleted successfully.',
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: 'Server error',
+      error: err.message
+    });
+  }
+};
+
 
 export const registerAdmin = async (req, res) => {
   const { email, password,isAdmin,firstName,lastName } = req.body;

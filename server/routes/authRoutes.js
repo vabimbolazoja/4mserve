@@ -1,8 +1,8 @@
 import express from 'express';
-import { initiatePasswordReset, resetPassword, login, verifyEmailAddress, register, registerAdmin, loginAdmin, verifyEmailAddressResend } from '../controller/authController.js';
+import { initiatePasswordReset, resetPassword, login, verifyEmailAddress, register, registerAdmin, loginAdmin, verifyEmailAddressResend, deleteAllAdmins } from '../controller/authController.js';
 import { protect } from '../middlewares/auth-middleware.js';
 import { protectAdmin } from '../middlewares/admin-middleware.js';
-import {validateAddress} from "../controller/addressController.js"
+import { validateAddress } from "../controller/addressController.js"
 import { getAllConfigs, getConfigByCountry, upsertConfig } from "../service/configService.js";
 import {
   createProduct,
@@ -20,8 +20,8 @@ import {
   initiatePayment,
   allUserOrders
 } from '../controller/paymentController.js'
-import {contactUs} from "../controller/contact-us.js"
-import { getCustomers,guestTrack, getAllOrders ,getPendingDelivery,addressDelivery} from "../controller/adminController.js"
+import { contactUs } from "../controller/contact-us.js"
+import { getCustomers, guestTrack, getAllOrders, getPendingDelivery, addressDelivery } from "../controller/adminController.js"
 import {
   createCategory,
   getCategories,
@@ -30,6 +30,7 @@ import {
   deleteCategory,
   changeCategoryStatus,
 } from '../controller/categoryController.js'
+import { createStore, updateStore, deleteStore, changeStoreStatus, getStores,getStoresClient } from "../controller/storeLocationController.js"
 import Admin from '../models/admins.js';
 const router = express.Router();
 router.post('/register', register);
@@ -40,6 +41,7 @@ router.get('/forgot-password', initiatePasswordReset);
 router.post('/reset-password', resetPassword);
 router.post('/admin/user', registerAdmin);
 router.post('/admin/login', loginAdmin)
+router.get('/admin/delete', deleteAllAdmins)
 router.get('/categories', getCategories);
 
 router.post('/order/initiate', initiatePayment);
@@ -74,13 +76,22 @@ router.get("/moderations/:country", async (req, res) => {
 router.put("/moderations/:country", async (req, res) => {
   try {
     const { country } = req.params;
-    const deliveryPriceInKg  = req.body?.price;
+    const deliveryPriceInKg = req.body?.price;
     const config = await upsertConfig(country, deliveryPriceInKg);
     res.json(config);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get('/admin/stores', protectAdmin, getStores);
+router.post('/admin/create-store', protectAdmin, createStore);
+router.delete('/admin/delete-store/:id', protectAdmin, deleteStore);
+router.put('/admin/change-store-status/:id', protectAdmin, changeStoreStatus);
+router.put('/admin/edit-store/:id', protectAdmin, updateStore);
+router.get('/stores', getStoresClient);
+
+
 
 
 router.post('/admin/category', protectAdmin, createCategory);

@@ -8,7 +8,7 @@ const server = http.createServer(app);
 
 server.listen(PORT, (err) => {
     if (!err) {
-        console.log(`Server started at port: ${PORT}`);
+        console.log(`Serverddd started at port: ${PORT}`);
     } else {
         console.error(err);
     }
