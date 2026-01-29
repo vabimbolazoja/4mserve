@@ -57,7 +57,7 @@ export const initiatePayment = async (req, res) => {
       path: '/transaction/initialize',
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${'pk_live_fd535794c8e6226c96cba0ac0ea6633af0bb6fa2'}`,
         'Content-Type': 'application/json',
       },
     };
@@ -115,7 +115,7 @@ export const verifyPayment = async (req, res) => {
       path: `/transaction/verify/${encodeURIComponent(ref)}`,
       method: "GET",
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${'pk_live_fd535794c8e6226c96cba0ac0ea6633af0bb6fa2'}`,
       },
       timeout: 5000,
     };
