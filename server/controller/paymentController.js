@@ -1,31 +1,23 @@
-import https from 'https'
-import Orders from '../models/orders.js'
-import Payment from '../models/payment.js'
-import Product from '../models/products.js'
 
-/* =========================
-   INITIATE PAYMENT
-========================= */
+import https from 'https';
+import Orders from '../models/orders.js';
+import Payment from '../models/payment.js';
+import Product from "../models/products.js"
 export const initiatePayment = async (req, res) => {
   try {
-    const {
-      deliveryInfo,
-      orders,
-      user_email,
-      user_id,
-      totalAmt,
-      paymentType,
-      deliveryCost,
-      totalSub,
-    } = req.body
+    // Extract and validate request body
+    const { deliveryInfo, orders, user_email, user_id, totalAmt, paymentType, deliveryCost, totalSub } = req.body;
 
-    if (!deliveryInfo || !orders?.length || !user_email || !user_id || !totalAmt) {
-      return res.status(400).json({ message: 'Missing required fields' })
+    if (!deliveryInfo || !orders?.length || !user_email || !user_id || !totalAmt || !paymentType) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const orderRef = `ORD-4MT-${Math.floor(100000 + Math.random() * 900000)}`
-    const paymentRef = `PMT-4MT-${Math.floor(100000 + Math.random() * 900000)}`
+    const randomNumbersOrders = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
+    const randomNumbersPmt = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
 
+
+
+    // Create order
     const order = new Orders({
       deliveryInfo,
       orders,
@@ -35,33 +27,29 @@ export const initiatePayment = async (req, res) => {
       paymentType,
       deliveryCost,
       totalSub,
-      ref: orderRef,
-    })
+      ref: `ORD-4MT-${randomNumbersOrders}`
+    });
 
+    // Create payment record
     const payment = new Payment({
       amount: totalAmt,
       userId: user_id,
       paymentType,
       orderId: order._id,
-      paymentRef,
-    })
+      paymentRef: `PMT-4MT-${randomNumbersPmt}`
+    });
 
-    await order.save()
-    await payment.save()
+    // Save both to DB
+    await order.save();
+    await payment.save();
 
+    // Prepare Paystack params
     const params = JSON.stringify({
       email: user_email,
-      amount: Math.round(totalAmt * 100),
-      currency: 'NGN',
-      reference: paymentRef,
-      callback_url: `https://www.4marketdays.com/${
-        user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'
-      }?order_id=${order._id}&order_ref=${orderRef}`,
-      metadata: {
-        orderId: order._id,
-        userId: user_id,
-      },
-    })
+      amount: totalAmt * 100,
+      currency: paymentType,
+      callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
+    });
 
     const options = {
       hostname: 'api.paystack.co',
@@ -72,132 +60,168 @@ export const initiatePayment = async (req, res) => {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
-    }
+    };
 
+    // Make request to Paystack
     const paystackReq = https.request(options, (paystackRes) => {
-      let data = ''
-
-      paystackRes.on('data', chunk => (data += chunk))
-
+      let data = '';
+      paystackRes.on('data', (chunk) => { data += chunk; });
       paystackRes.on('end', () => {
-        try {
-          const response = JSON.parse(data)
+        const responseJson = JSON.parse(data);
+        return res.status(200).json({
+          message: 'Order Submitted Successfully, You will be redirdected to the payment page to complete payment',
+          paystack: responseJson,
+          orderId: order._id,
+        });
+      });
+    });
 
-          if (!response.status) {
-            return res.status(400).json(response)
-          }
+    paystackReq.on('error', (error) => {
+      console.error(error);
+      return res.status(500).json({ message: 'Payment initialization failed', error: error.message });
+    });
 
-          return res.status(200).json({
-            message: 'Redirecting to payment gateway',
-            authorization_url: response.data.authorization_url,
-            access_code: response.data.access_code,
-            reference: response.data.reference,
-            orderId: order._id,
-          })
-        } catch (err) {
-          return res.status(500).json({
-            message: 'Invalid Paystack response',
-            error: err.message,
-          })
-        }
-      })
-    })
+    paystackReq.write(params);
+    paystackReq.end();
 
-    paystackReq.on('error', err =>
-      res.status(500).json({ message: 'Payment init failed', error: err.message })
-    )
-
-    paystackReq.write(params)
-    paystackReq.end()
   } catch (error) {
-    console.error(error)
-    return res.status(500).json({ message: 'Server error', error: error.message })
+    console.error(error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
-}
+};
 
-/* =========================
-   INVENTORY UPDATE
-========================= */
-const updateInventory = async order => {
+const updateInventory = async (order) => {
   for (const item of order.orders) {
-    const product = await Product.findById(item.prod_id)
+    const product = await Product.findById(item.prod_id);
     if (product) {
-      product.stock = Math.max(0, (product.stock || 0) - item.qty)
-      await product.save()
+      // Ensure quantity doesn't go negative
+      product.stock = Math.max(0, (product.stock || 0) - item.qty);
+      await product.save();
     }
   }
-}
+};
 
-/* =========================
-   VERIFY PAYMENT
-========================= */
 export const verifyPayment = async (req, res) => {
   try {
-    const { ref, id } = req.body
+    const { ref, id } = req.body;
 
     if (!ref || !id) {
-      return res.status(400).json({ message: 'Reference and order ID required' })
+      return res.status(400).json({ message: "Payment reference and order ID are required" });
     }
 
     const options = {
-      hostname: 'api.paystack.co',
+      hostname: "api.paystack.co",
       port: 443,
       path: `/transaction/verify/${encodeURIComponent(ref)}`,
-      method: 'GET',
+      method: "GET",
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
       },
-    }
+      timeout: 5000,
+    };
 
     const paystackReq = https.request(options, (paystackRes) => {
-      let data = ''
+      let data = "";
 
-      paystackRes.on('data', chunk => (data += chunk))
+      paystackRes.on("data", (chunk) => {
+        data += chunk;
+      });
 
-      paystackRes.on('end', async () => {
+      paystackRes.on("end", async () => {
         try {
-          const response = JSON.parse(data)
+          const responseJson = JSON.parse(data);
 
-          const order = await Orders.findById(id)
-          const payment = await Payment.findOne({ orderId: id })
+          const order = await Orders.findById(id);
+          const payment = await Payment.findOne({ orderId: id });
 
-          if (!order || !payment) {
-            return res.status(404).json({ message: 'Order not found' })
+          if (!order) {
+            return res.status(404).json({ message: "Order not found" });
           }
 
-          if (response?.data?.status === 'success') {
-            order.paymentStatus = 'PAID'
-            payment.paymentRef = ref
-            await updateInventory(order)
+          if (responseJson?.data?.status === "success") {
+            order.paymentStatus = "PAID";
+            payment.paymentRef = ref;
+
+            // Update inventory here
+            await updateInventory(order);
           } else {
-            order.paymentStatus = 'FAILED'
-            payment.paymentRef = ref
+            order.paymentStatus = "FAILED";
+            payment.paymentRef = ref;
           }
 
-          await order.save()
-          await payment.save()
+          await order.save();
 
           return res.status(200).json({
-            message: 'Payment verification completed',
-            status: order.paymentStatus,
-            paystack: response,
-          })
+            message: "Order updated successfully",
+            paystack: responseJson,
+            orderId: order._id,
+          });
         } catch (err) {
+          console.error(err);
           return res.status(500).json({
-            message: 'Verification processing error',
+            message: "Error processing payment verification",
             error: err.message,
-          })
+          });
         }
-      })
-    })
+      });
+    });
 
-    paystackReq.on('error', err =>
-      res.status(500).json({ message: 'Verification failed', error: err.message })
-    )
+    paystackReq.on("timeout", () => {
+      console.error("Paystack request timed out");
+      paystackReq.abort();
+      return res.status(504).json({ message: "Payment verification request timed out" });
+    });
 
-    paystackReq.end()
+    paystackReq.on("error", (error) => {
+      console.error("Paystack request error:", error.message);
+      return res.status(500).json({
+        message: "Payment verification failed",
+        error: error.message,
+      });
+    });
+
+    paystackReq.end();
   } catch (error) {
-    console.error(error)
-    return res.status(500).json({ message: 'Server error', error: error.message })
+    console.error(error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
+
+export const allUserOrders = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Pagination params
+    const page = Math.max(1, parseInt(req.query.page) || 1); // default page 1
+    const limit = Math.max(1, parseInt(req.query.limit) || 10); // default 10 per page
+    const skip = (page - 1) * limit;
+
+    // Query filter
+    const filter = { userId };
+
+    // Fetch paginated + latest first orders
+    const orders = await Orders.find(filter)
+      .sort({ createdAt: -1 }) // ensure you're sorting by actual timestamp field
+      .skip(skip)
+      .limit(limit);
+
+    // Count total orders
+    const totalOrders = await Orders.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalPages: Math.ceil(totalOrders / limit),
+      totalOrders,
+      orders,
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error. Could not fetch orders.",
+      error: error.message,
+    });
+  }
+};
