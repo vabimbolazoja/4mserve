@@ -37,7 +37,7 @@ export const initiatePayment = async (req, res) => {
     const payment = new Payment({
       amount: totalAmt,
       userId: user_id,
-      paymentType: resolvedCurrency,
+      paymentType: 'USD',
       orderId: order._id,
       paymentRef: `PMT-4MT-${randomNumbersPmt}`
     });
