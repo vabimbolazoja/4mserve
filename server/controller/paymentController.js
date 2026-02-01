@@ -16,6 +16,9 @@ export const initiatePayment = async (req, res) => {
     const randomNumbersPmt = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
 
 
+    console.log(paymentType,'payment type')
+
+
 
     // Create order
     const order = new Orders({
@@ -47,7 +50,7 @@ export const initiatePayment = async (req, res) => {
     const params = JSON.stringify({
       email: user_email,
       amount: totalAmt * 100,
-      currency: paymentType,
+      currency: 'USD',
       callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
     });
 
