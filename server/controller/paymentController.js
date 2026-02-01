@@ -54,15 +54,20 @@ export const initiatePayment = async (req, res) => {
       callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
     });
 
+    
+
     const options = {
       hostname: 'api.paystack.co',
       port: 443,
       path: '/transaction/initialize',
       method: 'POST',
+     
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
+  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+  'Content-Type': 'application/json',
+  'Content-Length': Buffer.byteLength(params),
+}
+
     };
 
     // Make request to Paystack
