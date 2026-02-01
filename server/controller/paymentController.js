@@ -30,11 +30,14 @@ export const initiatePayment = async (req, res) => {
       ref: `ORD-4MT-${randomNumbersOrders}`
     });
 
+    const resolvedCurrency = paymentType === 'USD' ? 'USD' : 'NGN';
+
+
     // Create payment record
     const payment = new Payment({
       amount: totalAmt,
       userId: user_id,
-      paymentType,
+      paymentType: resolvedCurrency,
       orderId: order._id,
       paymentRef: `PMT-4MT-${randomNumbersPmt}`
     });
