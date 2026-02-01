@@ -37,7 +37,7 @@ export const initiatePayment = async (req, res) => {
     const payment = new Payment({
       amount: totalAmt,
       userId: user_id,
-      paymentType: 'USD',
+      paymentType,
       orderId: order._id,
       paymentRef: `PMT-4MT-${randomNumbersPmt}`
     });
@@ -50,7 +50,7 @@ export const initiatePayment = async (req, res) => {
     const params = JSON.stringify({
       email: user_email,
       amount: totalAmt * 100,
-      currency: paymentType,
+      currency: resolvedCurrency,
       callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
     });
 
