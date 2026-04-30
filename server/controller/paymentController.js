@@ -12,6 +12,13 @@ export const initiatePayment = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    if (paymentType === 'USD' && Number(totalAmt) < 2) {
+      return res.status(400).json({
+        message: 'Minimum USD payment is $2'
+      });
+
+    }
+
     const randomNumbersOrders = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
     const randomNumbersPmt = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
 
@@ -33,6 +40,8 @@ export const initiatePayment = async (req, res) => {
       ref: `ORD-4MT-${randomNumbersOrders}`
     });
 
+
+
     // Create payment record
     const payment = new Payment({
       amount: totalAmt,
@@ -53,16 +62,22 @@ export const initiatePayment = async (req, res) => {
       currency: 'USD',
       callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
     });
+    console.log(params)
+
+
 
     const options = {
       hostname: 'api.paystack.co',
       port: 443,
       path: '/transaction/initialize',
       method: 'POST',
+
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
-      },
+        'Content-Length': Buffer.byteLength(params),
+      }
+
     };
 
     // Make request to Paystack

@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 // 🔹 Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, storageInstructions, nutritionalInfo, stock } = req.body;
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, storageInstructions, nutritionalInfo, stock, priceGbp, priceCanada,} = req.body;
 
     const foundCategory = await Category.findById(category);
     if (!foundCategory) return res.status(400).json({ message: 'Invalid category' });
@@ -16,6 +16,7 @@ export const createProduct = async (req, res) => {
       name,
       category,
       priceNaira,
+      priceGbp, priceCanada,
       priceUsd,
       description,
       moq,
@@ -41,7 +42,7 @@ export const getActiveProducts = async (req, res) => {
     const filter = { status: 'Active' };
 
     const products = await Product.find(filter)
-      .select('name category stock priceNaira priceUsd moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
+      .select('name category stock priceNaira priceUsd priceGbp priceCanada moq description nutritionalInfo storageInstructions imageUrls status') // Limit fields
       .populate('category', 'name') // 👈 populate only _id and name of category
       .skip(skip)
       .limit(limit)
@@ -95,7 +96,7 @@ export const getProducts = async (req, res) => {
     // ✅ Fetch products
     const products = await Product.find(query)
       .select(
-        "name category priceNaira stock priceUsd moq description nutritionalInfo storageInstructions imageUrls status"
+        "name category priceNaira stock priceUsd priceGbp priceCanada moq description nutritionalInfo storageInstructions imageUrls status"
       )
       .populate("category", "name")
       .skip(skip)
@@ -136,7 +137,7 @@ export const getProductsByCategory = async (req, res) => {
 
   try {
     const products = await Product.find(query)
-      .select('name category priceNaira priceUsd stock nutritionalInfo storageInstructions moq description imageUrls status')
+      .select('name category priceNaira priceUsd priceGbp priceCanada stock nutritionalInfo storageInstructions moq description imageUrls status')
       .populate('category', 'name')
       .skip(skip)
       .limit(limit)
@@ -174,7 +175,7 @@ export const getActiveProductsByCategory = async (req, res) => {
   try {
     const products = await Product.find(query)
       .select(
-        'name category priceNaira priceUsd stock nutritionalInfo storageInstructions moq description imageUrls status'
+        'name category priceNaira priceUsd priceGbp priceCanada stock nutritionalInfo storageInstructions moq description imageUrls status'
       )
       .populate('category', 'name')
       .skip(skip)
@@ -210,7 +211,7 @@ export const getProduct = async (req, res) => {
 // 🔹 Update Product
 export const updateProduct = async (req, res) => {
   try {
-    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, stock, storageInstructions, nutritionalInfo
+    const { name, category, priceNaira, priceUsd, description, moq, imageUrls, stock, storageInstructions, nutritionalInfo, priceGbp, priceCanada,
     } = req.body;
     const prodstatus = req.body.status ? 'Active' : 'Inactive'
 
@@ -221,7 +222,7 @@ export const updateProduct = async (req, res) => {
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, category, priceNaira, priceUsd, description, moq, stock, imageUrls, status: prodstatus, storageInstructions, nutritionalInfo },
+      { name, category, priceNaira, priceUsd,priceCanada, priceGbp, description, moq, stock, imageUrls, status: prodstatus, storageInstructions,priceGbp, priceCanada, nutritionalInfo },
       { new: true, runValidators: true }
     );
 

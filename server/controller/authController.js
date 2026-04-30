@@ -51,7 +51,7 @@ export const register = async (req, res) => {
 
 export const deleteAllAdmins = async (req, res) => {
   try {
-    const result = await Payment.deleteMany({});
+    const result = await Order.deleteMany({});
 
     res.status(200).json({
       message: 'All admin records deleted successfully.',

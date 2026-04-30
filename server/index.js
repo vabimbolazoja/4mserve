@@ -25,6 +25,7 @@ const allowedOrigins = [
   "https://4mcl.vercel.app",
   "http://localhost:5176", 
   "http://localhost:5173",
+    "http://localhost:5175",
   "https://www.4marketdays.com",
   "https://admin.4marketdays.com"
 
