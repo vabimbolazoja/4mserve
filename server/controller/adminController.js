@@ -149,7 +149,9 @@ export const getAllOrders = async (req, res) => {
                 path: "category",
                 select: "name description image",
               })
-              .select("name priceNaira priceUsd moq description imageUrls category");
+              .select(
+                "name priceNaira priceUsd priceGbp priceCanada moq description imageUrls category"
+              );
             return {
               ...item.toObject ? item.toObject() : item,
               product,
@@ -235,7 +237,7 @@ export const getPendingDelivery = async (req, res) => {
                 select: "name description image",
               })
               .select(
-                "name priceNaira priceUsd moq description imageUrls category"
+                "name priceNaira priceUsd priceGbp priceCanada moq description imageUrls category"
               );
 
             return {

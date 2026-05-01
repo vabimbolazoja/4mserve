@@ -20,6 +20,14 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    priceGbp: {
+      type: Number,
+      required: true,
+    },
+    priceCanada: {
+      type: Number,
+      required: true,
+    },
     description: {
       type: String,
       default: '',
@@ -37,8 +45,8 @@ const productSchema = new mongoose.Schema(
       default: 1,
     },
     stock: {
-      type: Number, // Minimum Order Quantity
-      stock: 0,
+      type: Number,
+      default: 0,
     },
     imageUrls: {
       type: [String],
@@ -57,5 +65,18 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+const normalizeCurrencyFields = (_doc, ret) => {
+  ret.priceGbp = ret.priceGbp != null ? ret.priceGbp : null;
+  ret.priceCanada = ret.priceCanada != null ? ret.priceCanada : null;
+  return ret;
+};
+
+productSchema.set('toJSON', { transform: normalizeCurrencyFields });
+productSchema.set('toObject', { transform: normalizeCurrencyFields });
+
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+const Product = mongoose.model('Product', productSchema);
 export default Product;
