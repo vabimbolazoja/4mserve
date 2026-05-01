@@ -26,6 +26,8 @@ export const createProduct = async (req, res) => {
 
     });
 
+    console.log(product);
+
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -102,6 +104,8 @@ export const getProducts = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
+
+
 
     // ✅ Count with same query
     const count = await Product.countDocuments(query);
@@ -213,6 +217,8 @@ export const updateProduct = async (req, res) => {
   try {
     const { name, category, priceNaira, priceUsd, description, moq, imageUrls, stock, storageInstructions, nutritionalInfo, priceGbp, priceCanada,
     } = req.body;
+
+    console.log(req.body);
     const prodstatus = req.body.status ? 'Active' : 'Inactive'
 
     if (category) {
@@ -222,7 +228,7 @@ export const updateProduct = async (req, res) => {
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, category, priceNaira, priceUsd,priceCanada, priceGbp, description, moq, stock, imageUrls, status: prodstatus, storageInstructions,priceGbp, priceCanada, nutritionalInfo },
+      { name, category, priceNaira, priceUsd,priceCanada, priceGbp, description, moq, stock, imageUrls, status: prodstatus, storageInstructions, nutritionalInfo },
       { new: true, runValidators: true }
     );
 
