@@ -77,7 +77,14 @@ router.put("/moderations/:country", async (req, res) => {
   try {
     const { country } = req.params;
     const deliveryPriceInKg = req.body?.price;
-    const config = await upsertConfig(country, deliveryPriceInKg);
+    const increment_percentage = req.body?.increment_percentage;
+    const maxqty = req.body?.maxqty;
+    const config = await upsertConfig(
+      country,
+      deliveryPriceInKg,
+      increment_percentage,
+      maxqty
+    );
     res.json(config);
   } catch (err) {
     res.status(500).json({ error: err.message });

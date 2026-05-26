@@ -12,10 +12,15 @@ export async function getConfigByCountry(country) {
 }
 
 // Update or create config for a country
-export async function upsertConfig(country, deliveryPriceInKg) {
+export async function upsertConfig(
+  country,
+  deliveryPriceInKg,
+  increment_percentage,
+  maxqty
+) {
   const config = await CountryConfig.findOneAndUpdate(
     { country },
-    { deliveryPriceInKg },
+    { deliveryPriceInKg, increment_percentage, maxqty },
     { new: true, upsert: true } // create if not exists
   );
   return config;
