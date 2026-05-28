@@ -76,9 +76,26 @@ router.get("/moderations/:country", async (req, res) => {
 router.put("/moderations/:country", async (req, res) => {
   try {
     const { country } = req.params;
-    const deliveryPriceInKg = req.body?.price;
+    // Accept the new payload shape, but keep backward-compat with `price`
+    const rawDeliveryPriceInKg =
+      req.body?.deliveryPriceInKg ?? req.body?.price ?? null;
+
     const increment_percentage = req.body?.increment_percentage;
     const maxqty = req.body?.maxqty;
+
+    if (rawDeliveryPriceInKg === null || rawDeliveryPriceInKg === undefined) {
+      return res.status(400).json({
+        message: "deliveryPriceInKg is required",
+      });
+    }
+
+    const deliveryPriceInKg = Number(rawDeliveryPriceInKg);
+    if (Number.isNaN(deliveryPriceInKg)) {
+      return res.status(400).json({
+        message: "deliveryPriceInKg must be a number",
+      });
+    }
+
     const config = await upsertConfig(
       country,
       deliveryPriceInKg,
