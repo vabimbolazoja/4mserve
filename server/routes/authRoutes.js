@@ -17,7 +17,7 @@ import {
 } from '../controller/productController.js';
 import {
   verifyPayment,
-  initiatePayment,
+   initiatePayment,
   allUserOrders
 } from '../controller/paymentController.js'
 import { contactUs } from "../controller/contact-us.js"

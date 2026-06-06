@@ -13,39 +13,41 @@ dotenv.config();
 const app = express();
 connectDB();
 
-// Security + Middleware
-app.use(helmet());
-app.use(express.json());
-app.use(mongoSanitize());
-app.use(cookieParser());
-
-// CORS setup for exactly two allowed origins
 const allowedOrigins = [
   "https://dmd-three.vercel.app",
   "https://4mcl.vercel.app",
-  "http://localhost:5173", 
+  "http://localhost:5173",
   "http://localhost:5174",
   "https://www.4marketdays.com",
-  "https://admin.4marketdays.com"
-
-
-
+  "https://4marketdays.com",
+  "https://admin.4marketdays.com",
 ];
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, false); // Block requests without origin
+  origin(origin, callback) {
+    // Allow non-browser tools (curl, server-side) with no Origin header
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+      return callback(null, true);
     }
+    return callback(null, false);
   },
-  credentials: true
+  credentials: true,
 };
 
+// CORS first so every response (including errors) gets the right headers
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight requests
+app.options("*", cors(corsOptions));
+
+// API is consumed cross-origin from 4marketdays.com — don't lock responses to same-origin
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(express.json());
+app.use(mongoSanitize());
+app.use(cookieParser());
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -61,7 +63,7 @@ app.use('/api', authRoutes);
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Server Error' });
+  res.status(500).json({ message: "Server Error" });
 });
 
 export default app; // <— This is key for Vercel
