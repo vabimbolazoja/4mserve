@@ -57,7 +57,7 @@ export const initiatePayment = async (req, res) => {
 
     // Prepare Flutterwave hosted checkout params.
     // Flutterwave expects amount in major units (e.g. 3.00 => "3" or "3.00"), NOT multiplied by 100.
-    const flwSecretKey = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY;
+    const flwSecretKey = 'FLWSECK-88a493e9765a2fde7e482b9473ae27ef-19f7ee1b253vt-X'
     if (!flwSecretKey) {
       return res.status(500).json({
         message: 'Flutterwave secret key is missing (set FLW_SECRET_KEY or FLUTTERWAVE_SECRET_KEY).',
@@ -159,7 +159,7 @@ export const verifyPayment = async (req, res) => {
       order_id,
     } = req.body;
 
-    const flwSecretKey = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY;
+    const flwSecretKey = 'FLWSECK-88a493e9765a2fde7e482b9473ae27ef-19f7ee1b253vt-X';
     if (!flwSecretKey) {
       return res.status(500).json({
         message: 'Flutterwave secret key is missing (set FLW_SECRET_KEY or FLUTTERWAVE_SECRET_KEY).',
