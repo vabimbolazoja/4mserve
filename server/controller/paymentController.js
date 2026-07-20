@@ -55,52 +55,77 @@ export const initiatePayment = async (req, res) => {
     await order.save();
     await payment.save();
 
-    // Prepare Paystack params
-    const params = JSON.stringify({
-      email: user_email,
-      amount: totalAmt * 100,
+    // Prepare Flutterwave hosted checkout params.
+    // Flutterwave expects amount in major units (e.g. 3.00 => "3" or "3.00"), NOT multiplied by 100.
+    const flwSecretKey = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY;
+    if (!flwSecretKey) {
+      return res.status(500).json({
+        message: 'Flutterwave secret key is missing (set FLW_SECRET_KEY or FLUTTERWAVE_SECRET_KEY).',
+      });
+    }
+
+    const callbackUrl = `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`;
+
+    // Use `order.ref` as tx_ref so verification can reliably match our internal order.
+    const txRef = order.ref;
+    const payload = JSON.stringify({
+      tx_ref: txRef,
+      amount: String(totalAmt),
       currency: paymentType,
-      callback_url: `${`https://www.4marketdays.com`}/${user_id === '6895cd9fb97e7a9fe487d6e1' ? 'guest-order' : 'orders'}?order_id=${order._id}&order_ref=${order?.ref}`,
+      redirect_url: callbackUrl,
+      customer: {
+        email: user_email,
+      },
+      // Keep payment metadata lightweight; we already persist order/payment on our DB.
+      meta: {
+        order_id: String(order._id),
+      },
     });
-    console.log(params)
-
-
 
     const options = {
-      hostname: 'api.paystack.co',
+      hostname: 'api.flutterwave.com',
       port: 443,
-      path: '/transaction/initialize',
+      path: '/v3/payments',
       method: 'POST',
-
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${flwSecretKey}`,
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(params),
-      }
-
+        'Content-Length': Buffer.byteLength(payload),
+      },
     };
 
-    // Make request to Paystack
-    const paystackReq = https.request(options, (paystackRes) => {
+    const flwReq = https.request(options, (flwRes) => {
       let data = '';
-      paystackRes.on('data', (chunk) => { data += chunk; });
-      paystackRes.on('end', () => {
+      flwRes.on('data', (chunk) => {
+        data += chunk;
+      });
+      flwRes.on('end', () => {
         const responseJson = JSON.parse(data);
+        if (responseJson?.status !== 'success') {
+          return res.status(400).json({
+            message: 'Flutterwave payment initialization failed',
+            flutterwave: responseJson,
+            orderId: order._id,
+          });
+        }
+
         return res.status(200).json({
-          message: 'Order Submitted Successfully, You will be redirdected to the payment page to complete payment',
-          paystack: responseJson,
+          message: 'Order Submitted Successfully, redirecting to the Flutterwave checkout page.',
+          flutterwave: responseJson,
+          payment_link: responseJson?.data?.link,
           orderId: order._id,
+          tx_ref: txRef,
         });
       });
     });
 
-    paystackReq.on('error', (error) => {
+    flwReq.on('error', (error) => {
       console.error(error);
       return res.status(500).json({ message: 'Payment initialization failed', error: error.message });
     });
 
-    paystackReq.write(params);
-    paystackReq.end();
+    flwReq.write(payload);
+    flwReq.end();
 
   } catch (error) {
     console.error(error);
@@ -121,57 +146,99 @@ const updateInventory = async (order) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    const { ref, id } = req.body;
+    // To keep backward compatibility with your previous Paystack payload,
+    // accept a few possible field names:
+    // - ref (Paystack) -> tx_ref (Flutterwave)
+    // - id -> order_id
+    const {
+      ref,
+      id,
+      tx_ref,
+      transaction_id,
+      order_ref,
+      order_id,
+    } = req.body;
 
-    if (!ref || !id) {
-      return res.status(400).json({ message: "Payment reference and order ID are required" });
+    const flwSecretKey = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY;
+    if (!flwSecretKey) {
+      return res.status(500).json({
+        message: 'Flutterwave secret key is missing (set FLW_SECRET_KEY or FLUTTERWAVE_SECRET_KEY).',
+      });
     }
 
+    const orderId = id || order_id;
+    const txRef = ref || tx_ref || order_ref;
+
+    if (!orderId || (!txRef && !transaction_id)) {
+      return res.status(400).json({
+        message: 'Order ID and Flutterwave reference are required (orderId + tx_ref).',
+      });
+    }
+
+    // Preferred: verify using tx_ref (matches plan + hosted checkout).
+    const useTxRefVerification = Boolean(txRef);
+    const path = useTxRefVerification
+      ? `/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`
+      : `/v3/transactions/${encodeURIComponent(transaction_id)}/verify`;
+
     const options = {
-      hostname: "api.paystack.co",
+      hostname: 'api.flutterwave.com',
       port: 443,
-      path: `/transaction/verify/${encodeURIComponent(ref)}`,
-      method: "GET",
+      path,
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${flwSecretKey}`,
       },
-      timeout: 5000,
+      timeout: 10000,
     };
 
-    const paystackReq = https.request(options, (paystackRes) => {
-      let data = "";
+    const flwReq = https.request(options, (flwRes) => {
+      let data = '';
 
-      paystackRes.on("data", (chunk) => {
+      flwRes.on('data', (chunk) => {
         data += chunk;
       });
 
-      paystackRes.on("end", async () => {
+      flwRes.on('end', async () => {
         try {
           const responseJson = JSON.parse(data);
 
-          const order = await Orders.findById(id);
-          const payment = await Payment.findOne({ orderId: id });
-
+          const order = await Orders.findById(orderId);
           if (!order) {
             return res.status(404).json({ message: "Order not found" });
           }
 
-          if (responseJson?.data?.status === "success") {
-            order.paymentStatus = "PAID";
-            payment.paymentRef = ref;
+          // Flutterwave typically returns:
+          // { status: "success", data: { status: "successful" | "failed" ... } }
+          const verifiedStatus = responseJson?.data?.status;
+          const isSuccessful = verifiedStatus === 'successful';
+          const flutterwaveRef = responseJson?.data?.flw_ref;
 
-            // Update inventory here
-            await updateInventory(order);
-          } else {
-            order.paymentStatus = "FAILED";
-            payment.paymentRef = ref;
+          let payment = await Payment.findOne({ orderId });
+          if (!payment) {
+            // Create a payment record if it doesn't exist yet (prevents crashes)
+            payment = new Payment({
+              amount: order?.totalAmt,
+              userId: order?.userId,
+              paymentType: order?.paymentType,
+              orderId: order._id,
+              paymentRef: flutterwaveRef || txRef || String(transaction_id || ''),
+            });
           }
 
+          order.paymentStatus = isSuccessful ? 'PAID' : 'FAILED';
+          payment.paymentRef = flutterwaveRef || txRef || payment.paymentRef;
+
+          if (isSuccessful) {
+            await updateInventory(order);
+          }
+
+          await payment.save();
           await order.save();
 
           return res.status(200).json({
             message: "Order updated successfully",
-            paystack: responseJson,
+            flutterwave: responseJson,
             orderId: order._id,
           });
         } catch (err) {
@@ -184,21 +251,21 @@ export const verifyPayment = async (req, res) => {
       });
     });
 
-    paystackReq.on("timeout", () => {
-      console.error("Paystack request timed out");
-      paystackReq.abort();
+    flwReq.on('timeout', () => {
+      console.error("Flutterwave request timed out");
+      flwReq.abort();
       return res.status(504).json({ message: "Payment verification request timed out" });
     });
 
-    paystackReq.on("error", (error) => {
-      console.error("Paystack request error:", error.message);
+    flwReq.on('error', (error) => {
+      console.error("Flutterwave request error:", error.message);
       return res.status(500).json({
         message: "Payment verification failed",
         error: error.message,
       });
     });
 
-    paystackReq.end();
+    flwReq.end();
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error", error: error.message });
